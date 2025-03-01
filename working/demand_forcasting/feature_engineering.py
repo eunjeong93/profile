@@ -1,18 +1,4 @@
-"""
-전일 예측 모델_v3
-===========
-Version:
-    (2023-04-16)
 
-Author: 
-    dooun oh <dooun.oh@kurlycorp.com>
-
-Attributes:
-    * Region Mapper
-    * ar_goal
-    * event 
-
-"""
 #%%
 #=================================
 # 1. Import module
