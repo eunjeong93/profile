@@ -29,11 +29,11 @@ class RegionOrderPredict(DataProcessor):
         self.target_min_date = self.target_date - timedelta(days=2)
         self.rgn_mapper = RegionMapper(self.target_date)
         
-        self.calibration = # list of expectation correction values
-        self.calibration =  # list of expectation correction values
+        self.calibration = '# list of expectation correction values'
+        self.calibration =  '# list of expectation correction values'
 
         self.table_name = "table name"
-        self.save_idx = [column_list]
+        self.save_idx = ['column_list']
         self.is_send = kwargs.get("send", True)
 
 
@@ -52,7 +52,7 @@ class RegionOrderPredict(DataProcessor):
         # handle an exception
         df['column'] = np.where((df['column'].str.startswith("L")) | (df['column'].str.startswith("N")), 'text', df['column'])
         df = df[df['column'].isin(self.rgn_list)]  
-        df = df.groupby([column_list])['column'].sum().reset_index()        
+        df = df.groupby(['column_list'])['column'].sum().reset_index()        
 
         # additional processing
         df['column'] = df['column'].dt.day_name()
@@ -301,7 +301,7 @@ class RegionOrderPredict(DataProcessor):
 
             promo_df = promo_df.append(sub_df)
 
-        promo_df = promo_df.groupby([column_list])['column'].nunique().unstack().reset_index().fillna(0)
+        promo_df = promo_df.groupby(['column_list'])['column'].nunique().unstack().reset_index().fillna(0)
         promo_df.rename(columns={'column': 'column'}, inplace=True)
 
         df = df.merge(promo_df, on=['column'], how='left')
