@@ -1,11 +1,12 @@
-import argparse
-import json
-from sqlalchemy import create_engine
-from gensim.models import Word2Vec
-import numpy as np
-import re
-import psycopg2
+# create class
 import pandas as pd
+import psycopg2
+import re
+import numpy as np
+from gensim.models import Word2Vec
+from sqlalchemy import create_engine
+import json
+import argparse
 
 
 class RecipeRecommender:
@@ -21,15 +22,26 @@ class RecipeRecommender:
         self.similarity_recipe = None
         self.similarity_user = None
         self.popular_recipe = None
-
+    
     def _connect_db(self):
-        """Connect to PostgreSQL database"""
-        return psycopg2.connect(**self.db_params)
+        """Connect to PostgreSQL database using SQLAlchemy"""
+        db_url = f"postgresql+psycopg2://{self.db_params['user']}:{self.db_params['password']}@{self.db_params['host']}:{self.db_params['port']}/{self.db_params['dbname']}"
+        return create_engine(db_url)
+
 
     def _load_data(self):
-        """Load data from PostgreSQL into Pandas DataFrame"""
+        """Load data using SQLAlchemy"""
         query = "SELECT * FROM new_review"
         return pd.read_sql(query, self.conn)
+
+    # def _connect_db(self):
+    #     """Connect to PostgreSQL database"""
+    #     return psycopg2.connect(**self.db_params)
+
+    # def _load_data(self):
+    #     """Load data from PostgreSQL into Pandas DataFrame"""
+    #     query = "SELECT * FROM new_review"
+    #     return pd.read_sql(query, self.conn)
 
     def _most_popular_list(self):
         agg = self.df.groupby(['recipe_name'])[['agg_rating']].mean(
@@ -189,6 +201,7 @@ class RecipeRecommender:
         food_category TEXT,
         keyword_collection JSONB,
         stars NUMERIC,
+        agg_rating NUMERIC,
         PRIMARY KEY (user_name, recipe_name)
         );
         """
@@ -201,21 +214,23 @@ class RecipeRecommender:
         for _, row in self.df.iterrows():
             cursor.execute(
                 """
-            INSERT INTO recommendations (user_name, recipe_name, recommend_result, food_category, keyword_collection, stars)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (user_name, recipe_name)  
-            DO UPDATE SET recommend_result = EXCLUDED.recommend_result,
-                           food_category = EXCLUDED.food_category,
-                           keyword_collection = EXCLUDED.keyword_collection,
-                           stars = EXCLUDED.stars;
-            """,
+                INSERT INTO recommendations (user_name, recipe_name, recommend_result, food_category, keyword_collection, stars, agg_rating)  
+                VALUES (%s, %s, %s, %s, %s, %s, %s)  -- ✅ add agg_rating
+                ON CONFLICT (user_name, recipe_name)  
+                DO UPDATE SET recommend_result = EXCLUDED.recommend_result,
+                            food_category = EXCLUDED.food_category,
+                            keyword_collection = EXCLUDED.keyword_collection,
+                            stars = EXCLUDED.stars,
+                            agg_rating = EXCLUDED.agg_rating;
+                """,
                 (row['user_name'], row['recipe_name'],
-                 json.dumps(row['recommend_result']),  # JSON 변환
-                 row.get('food_category', None),  # food_category (없을 경우 None)
-                 # keyword_collection (리스트 -> JSON 변환)
-                 json.dumps(row.get('keyword_collection', [])),
-                 row.get('stars', None))  # stars (없을 경우 None)
+                 json.dumps(row['recommend_result']),
+                    row.get('food_category', None),
+                    json.dumps(row.get('keyword_collection', [])),
+                    row.get('stars', None),
+                    row.get('agg_rating', None))  # ✅ add agg_rating 
             )
+
         print("📤 save the result of recipe similarity to database...")
         create_similarity_table_query = """
         CREATE TABLE IF NOT EXISTS recipe_similarity_matrix (
@@ -230,12 +245,12 @@ class RecipeRecommender:
         # Remove existing data for update
         cursor.execute("DELETE FROM recipe_similarity_matrix;")
 
-        # Insert new similarity data (유사도 행렬 적재)
-        for i, j in zip(*np.triu_indices_from(self.similarity_recipe, k=1)):  # 상삼각 행렬만 사용
+        # Insert new similarity data
+        for i, j in zip(*np.triu_indices_from(self.similarity_recipe, k=1)):  # for efficiency
             recipe_1, recipe_2 = self.similarity_recipe.index[i], self.similarity_recipe.columns[j]
             similarity_score = self.similarity_recipe.iloc[i, j]
 
-            if similarity_score > 0:  # 0보다 큰 경우만 저장
+            if similarity_score > 0:
                 cursor.execute(
                     """
                     INSERT INTO recipe_similarity_matrix (recipe_1, recipe_2, similarity_score)
@@ -251,14 +266,17 @@ class RecipeRecommender:
         cursor.close()
         print("✅ Finish to save data")
 
-    def total_pipeline(self):
+    def total_pipeline(self, upload=False):
         self.preprocess_data()
         self.train_models()
         self.compute_similarities()
         self.generate_recommendations()
-        self.upload_database()
+        if upload == True:
+            self.upload_database()
 
     def create_API(self, **kwargs):
+        self._most_popular_list()
+        self.total_pipeline()
         user_name = kwargs['user_name']
         search_keyword = kwargs['keyword']
         history_recipe = kwargs['history_recipe']
@@ -276,11 +294,9 @@ class RecipeRecommender:
             else:
                 agg = tmp.groupby(['recipe_name'])[['agg_rating']].mean(
                 ).sort_values(['agg_rating'], ascending=False)[0:15]
-                return {"first": agg.index}
+                return {"first": list(agg.index)}
         if user_name in list(self.df.user_name):
             return self.df.loc[(self.df.user_name == user_name) & (self.df.recipe_name == history_recipe), ][['recommend_result']].values[0][0]
-
-
 
 
 
