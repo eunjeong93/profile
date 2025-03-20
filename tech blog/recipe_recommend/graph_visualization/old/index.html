@@ -31,11 +31,17 @@
     <svg width="900" height="600"></svg>
 
     <script>
-        // ✅ Enter 키로 검색 실행
-        document.getElementById("searchBox").addEventListener("keypress", function (event) {
-            if (event.key === "Enter") {
-                updateGraph();
-            }
+        document.addEventListener("DOMContentLoaded", function () {
+            // ✅ 기본값 설정
+            let defaultSearch = "Creamy White Chili";  // 기본 검색어 (예: 특정 노드 이름)
+            let defaultMinWeight = 0.985;  // 기본 최소 가중치 값
+
+            // ✅ 검색창 & 가중치 입력 필드에 기본값 채우기
+            document.getElementById("searchBox").value = defaultSearch;
+            document.getElementById("weightFilter").value = defaultMinWeight;
+
+            // ✅ 초기 그래프 로딩 시 기본값 사용
+            updateGraph(defaultSearch, defaultMinWeight);
         });
 
         function updateGraph() {

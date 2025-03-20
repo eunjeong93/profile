@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <title>Network Graph</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        svg {
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+        }
+
+        /* ✅ Search Box는 크기 유지, 다른 입력 필드는 작게 조정 */
+        input[type="text"] {
+            width: 150px; /* ✅ Search Keyword 크기 유지 */
+        }
+
+        input[type="number"] {
+            width: 40px; /* ✅ Min Weight, Min Stars, Hop Depth (K) 크기 줄임 */
+        }
+
+        select {
+            width: 100px; /* ✅ Node Type Dropdown 크기 조정 */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Network Graph</h1>
+
+    <!-- ✅ Search & 필터 그룹 정렬 -->
+    <div class="filter-group">
+        <label>Search: <input type="text" id="searchBox"></label>
+        <label>Min Weight: <input type="number" id="weightFilter" step="0.1" value="0"></label>
+        <label>Min Stars: <input type="number" id="starsFilter" step="1" value="3"></label>
+        <label>Hop Depth (K): <input type="number" id="kFilter" step="1" value="1" min="1"></label>
+        <label>Node Type:
+            <select id="typeFilter">
+                <option value="">All</option>
+                <option value="user_name">User Name</option>
+                <option value="recipe_name">Recipe Name</option>
+                <option value="keyword">Keyword</option>
+                <option value="category">Category</option>
+            </select>
+        </label>
+    </div>
+
+    <!-- ✅ relation 필터 한 줄 아래로 이동 -->
+    <div class="filter-group">
+        <label>Relation:</label>
+        <input type="checkbox" id="relationAll" checked> **All**
+        <input type="checkbox" class="relation-checkbox" value="keyword" checked> Keyword
+        <input type="checkbox" class="relation-checkbox" value="category" checked> Category
+        <input type="checkbox" class="relation-checkbox" value="first" checked> First
+        <input type="checkbox" class="relation-checkbox" value="second" checked> Second
+        <input type="checkbox" class="relation-checkbox" value="third" checked> Third
+    </div>
+
+    <button onclick="updateGraph()">Search</button> <br>
+
+    <br> <svg width="900" height="600"></svg>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let defaultSearch = "Rhoni347";
+            let defaultMinWeight = 0.98;
+            let defaultType = "";
+            let defaultMinStars = 4;
+            let defaultRelations = ["keyword", "category", "first", "second", "third"];
+
+            document.getElementById("searchBox").value = defaultSearch;
+            document.getElementById("weightFilter").value = defaultMinWeight;
+            document.getElementById("typeFilter").value = defaultType;
+            document.getElementById("starsFilter").value = defaultMinStars;
+            document.getElementById("kFilter").value = defaultK;
+
+            document.querySelectorAll(".relation-checkbox").forEach(cb => {
+                cb.checked = defaultRelations.includes(cb.value);
+            });
+
+            updateGraph();
+        });
+
+        // ✅ "All" 체크박스 클릭 시 모든 relation 선택/해제
+        document.getElementById("relationAll").addEventListener("change", function () {
+            let checkboxes = document.querySelectorAll(".relation-checkbox");
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+
+        function updateGraph() {
+            let searchQuery = document.getElementById("searchBox").value;
+            let minWeight = document.getElementById("weightFilter").value;
+            let nodeType = document.getElementById("typeFilter").value;
+            let minStars = document.getElementById("starsFilter").value;
+            let k = document.getElementById("kFilter").value;
+
+            let selectedRelations = [];
+            document.querySelectorAll(".relation-checkbox:checked").forEach(cb => {
+                selectedRelations.push(cb.value);
+            });
+
+            // ✅ 만약 relation이 전부 선택되었으면 All 상태 유지
+            let allChecked = document.querySelectorAll(".relation-checkbox:checked").length === document.querySelectorAll(".relation-checkbox").length;
+            document.getElementById("relationAll").checked = allChecked;
+
+            let apiUrl = `http://127.0.0.1:5000/graph?search=${searchQuery}&min_weight=${minWeight}&type=${nodeType}&min_stars=${minStars}&relation=${selectedRelations.join("&relation=")}`;
+
+            console.log("📡 API 요청:", apiUrl);
+
+            d3.json(apiUrl).then(function (data) {
+                console.log("✅ 데이터 받아옴:", data);
+
+                d3.select("svg").selectAll("*").remove();
+                let svg = d3.select("svg"),
+                    width = +svg.attr("width"),
+                    height = +svg.attr("height");
+
+                let simulation = d3.forceSimulation(data.nodes)
+                    .force("link", d3.forceLink(data.edges).id(d => d.id).distance(100))
+                    .force("charge", d3.forceManyBody().strength(-300))
+                    .force("center", d3.forceCenter(width / 2, height / 2));
+
+                let link = svg.append("g")
+                    .selectAll("line")
+                    .data(data.edges)
+                    .enter().append("line")
+                    .style("stroke", "#aaa")
+                    .style("stroke-width", d => Math.sqrt(d.weight) + 1);
+
+                let node = svg.append("g")
+                    .selectAll("circle")
+                    .data(data.nodes)
+                    .enter().append("circle")
+                    .attr("r", 12)
+                    .style("fill", d => d.type === "user_name" ? "#e74c3c" : "#3498db")
+                    .call(d3.drag()
+                        .on("start", dragStarted)
+                        .on("drag", dragged)
+                        .on("end", dragEnded));
+
+                let labels = svg.append("g")
+                    .selectAll("text")
+                    .data(data.nodes)
+                    .enter().append("text")
+                    .attr("dy", 5)
+                    .attr("dx", 10)
+                    .text(d => d.id)
+                    .style("font-size", "12px")
+                    .style("fill", "#333");
+
+                simulation.on("tick", () => {
+                    link.attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+
+                    node.attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+
+                    labels.attr("x", d => d.x + 15)
+                        .attr("y", d => d.y + 5);
+                });
+
+            }).catch(error => console.error("❌ API 호출 실패:", error));
+        }
+
+        updateGraph();
+    </script>
+</body>
+
+</html>

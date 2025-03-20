@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Network Graph</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script defer src="{{ url_for('static', filename='js/script.js') }}"></script> <!-- ✅ 올바른 방식 -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        svg {
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            width: 100vw;
+            height: 90vh;
+            display: block;
+            margin: auto;
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+        }
+
+        /* ✅ Search Box는 크기 유지, 다른 입력 필드는 작게 조정 */
+        input[type="text"] {
+            width: 150px;
+        }
+
+        input[type="number"] {
+            width: 40px;
+        }
+
+        select {
+            width: 100px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Network Graph</h1>
+
+    <div class="filter-group">
+        <label>Search: <input type="text" id="searchBox"></label>
+        <label>Min Weight: <input type="number" id="weightFilter" step="0.1" value="0"></label>
+        <label>Min Stars: <input type="number" id="starsFilter" step="1" value="3"></label>
+        <label>Hop Depth (K): <input type="number" id="kFilter" step="1" value="1" min="1"></label>
+        <label>Node Type:
+            <select id="typeFilter">
+                <option value="">All</option>
+                <option value="user_name">User Name</option>
+                <option value="recipe_name">Recipe Name</option>
+                <option value="keyword">Keyword</option>
+                <option value="category">Category</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="filter-group">
+        <label>Relation:</label>
+        <input type="checkbox" id="relationAll" checked> **All**
+        <input type="checkbox" class="relation-checkbox" value="keyword" checked> Keyword
+        <input type="checkbox" class="relation-checkbox" value="category" checked> Category
+        <input type="checkbox" class="relation-checkbox" value="first" checked> First
+        <input type="checkbox" class="relation-checkbox" value="second" checked> Second
+        <input type="checkbox" class="relation-checkbox" value="third" checked> Third
+    </div>
+
+    <button onclick="updateGraph()">Search</button>
+    <br>
+    <svg id="networkGraph" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet"></svg><br>
+
+</body>
+
+</html>
