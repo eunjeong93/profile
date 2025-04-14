@@ -188,82 +188,82 @@ class RecipeRecommender:
         print("📤 save the result of recommendation to database...")
 
         # connect database
-        conn = self.conn
-        cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS recommendations;")
-
-        # create table if data doesn't exist
-        create_table_query = """
-        CREATE TABLE IF NOT EXISTS recommendations (
-        user_name TEXT NOT NULL,
-        recipe_name TEXT NOT NULL,
-        recommend_result JSONB NOT NULL,
-        food_category TEXT,
-        keyword_collection JSONB,
-        stars NUMERIC,
-        agg_rating NUMERIC,
-        PRIMARY KEY (user_name, recipe_name)
-        );
-        """
-        cursor.execute(create_table_query)
+        # conn = self.conn
+        # cursor = conn.cursor()
+        with self.conn.connect() as conn: 
+            conn.execute("DROP TABLE IF EXISTS recommendations;")
+            # create table if data doesn't exist
+            create_table_query = """
+            CREATE TABLE IF NOT EXISTS recommendations (
+            user_name TEXT NOT NULL,
+            recipe_name TEXT NOT NULL,
+            recommend_result JSONB NOT NULL,
+            food_category TEXT,
+            keyword_collection JSONB,
+            stars NUMERIC,
+            agg_rating NUMERIC,
+            PRIMARY KEY (user_name, recipe_name)
+            );
+            """
+            conn.execute(create_table_query)
 
         # remove original data for data update
-        cursor.execute("DELETE FROM recommendations;")
+            conn.execute("DELETE FROM recommendations;")
 
         # insert data
-        for _, row in self.df.iterrows():
-            cursor.execute(
-                """
-                INSERT INTO recommendations (user_name, recipe_name, recommend_result, food_category, keyword_collection, stars, agg_rating)  
-                VALUES (%s, %s, %s, %s, %s, %s, %s)  -- ✅ add agg_rating
-                ON CONFLICT (user_name, recipe_name)  
-                DO UPDATE SET recommend_result = EXCLUDED.recommend_result,
-                            food_category = EXCLUDED.food_category,
-                            keyword_collection = EXCLUDED.keyword_collection,
-                            stars = EXCLUDED.stars,
-                            agg_rating = EXCLUDED.agg_rating;
-                """,
-                (row['user_name'], row['recipe_name'],
-                 json.dumps(row['recommend_result']),
-                    row.get('food_category', None),
-                    json.dumps(row.get('keyword_collection', [])),
-                    row.get('stars', None),
-                    row.get('agg_rating', None))  # ✅ add agg_rating 
-            )
-
-        print("📤 save the result of recipe similarity to database...")
-        create_similarity_table_query = """
-        CREATE TABLE IF NOT EXISTS recipe_similarity_matrix (
-            recipe_1 TEXT NOT NULL,
-            recipe_2 TEXT NOT NULL,
-            similarity_score NUMERIC NOT NULL,
-            PRIMARY KEY (recipe_1, recipe_2)
-        );
-        """
-        cursor.execute(create_similarity_table_query)
-
-        # Remove existing data for update
-        cursor.execute("DELETE FROM recipe_similarity_matrix;")
-
-        # Insert new similarity data
-        for i, j in zip(*np.triu_indices_from(self.similarity_recipe, k=1)):  # for efficiency
-            recipe_1, recipe_2 = self.similarity_recipe.index[i], self.similarity_recipe.columns[j]
-            similarity_score = self.similarity_recipe.iloc[i, j]
-
-            if similarity_score > 0:
-                cursor.execute(
+            for _, row in self.df.iterrows():
+                conn.execute(
                     """
-                    INSERT INTO recipe_similarity_matrix (recipe_1, recipe_2, similarity_score)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (recipe_1, recipe_2)  
-                    DO UPDATE SET similarity_score = EXCLUDED.similarity_score;
+                    INSERT INTO recommendations (user_name, recipe_name, recommend_result, food_category, keyword_collection, stars, agg_rating)  
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)  -- ✅ add agg_rating
+                    ON CONFLICT (user_name, recipe_name)  
+                    DO UPDATE SET recommend_result = EXCLUDED.recommend_result,
+                                food_category = EXCLUDED.food_category,
+                                keyword_collection = EXCLUDED.keyword_collection,
+                                stars = EXCLUDED.stars,
+                                agg_rating = EXCLUDED.agg_rating;
                     """,
-                    (recipe_1, recipe_2, float(similarity_score))
+                    (row['user_name'], row['recipe_name'],
+                    json.dumps(row['recommend_result']),
+                        row.get('food_category', None),
+                        json.dumps(row.get('keyword_collection', [])),
+                        row.get('stars', None),
+                        row.get('agg_rating', None))  # ✅ add agg_rating 
                 )
 
+            print("📤 save the result of recipe similarity to database...")
+            create_similarity_table_query = """
+            CREATE TABLE IF NOT EXISTS recipe_similarity_matrix (
+                recipe_1 TEXT NOT NULL,
+                recipe_2 TEXT NOT NULL,
+                similarity_score NUMERIC NOT NULL,
+                PRIMARY KEY (recipe_1, recipe_2)
+            );
+            """
+            conn.execute(create_similarity_table_query)
+
+        # Remove existing data for update
+            conn.execute("DELETE FROM recipe_similarity_matrix;")
+
+        # Insert new similarity data
+            for i, j in zip(*np.triu_indices_from(self.similarity_recipe, k=1)):  # for efficiency
+                recipe_1, recipe_2 = self.similarity_recipe.index[i], self.similarity_recipe.columns[j]
+                similarity_score = self.similarity_recipe.iloc[i, j]
+
+                if similarity_score > 0:
+                    conn.execute(
+                        """
+                        INSERT INTO recipe_similarity_matrix (recipe_1, recipe_2, similarity_score)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (recipe_1, recipe_2)  
+                        DO UPDATE SET similarity_score = EXCLUDED.similarity_score;
+                        """,
+                        (recipe_1, recipe_2, float(similarity_score))
+                    )
+
         print("📤 save the result of user similarity to database...")
-        conn.commit()
-        cursor.close()
+        # conn.commit()
+        # cursor.close()
         print("✅ Finish to save data")
 
     def total_pipeline(self, upload=False):
