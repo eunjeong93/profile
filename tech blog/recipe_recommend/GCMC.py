@@ -225,21 +225,41 @@ class BilinearMixture(nn.Module):
         return F.log_softmax(out, dim=1)
 
 class RecommenderSideInfoGAE(nn.Module):
-    def __init__(self, input_dim, feat_hidden_dim, hidden_dims, num_classes,
-                 num_basis_functions, num_users, num_items, num_side_features,
-                 accum='sum', self_connections=False, dropout=0.5):
+    def __init__(self, feat_hidden_dim, num_support, hidden_dims, num_classes,
+                 num_basis_functions, num_users, num_items, u_num_side_features, v_num_side_features,
+                 accum='sum', self_connections=False, dropout=0.5, input_dim=128):
         super().__init__()
+        
+        self.dropout = dropout
+        self.num_users = num_users
+        self.num_items = num_items
+        self.user_emb = nn.Embedding(self.num_users, input_dim)
+        self.item_emb = nn.Embedding(self.num_items, input_dim)
 
         # 1. GCN layer (custom 구현 필요: StackGCN or OrdinalMixtureGCN)
         if accum == 'sum':
-            self.gcn = OrdinalMixtureGCN(input_dim, hidden_dims[0], self_connections)
+            self.gcn = OrdinalMixtureGCN(
+                                        input_dim=input_dim,
+                                        output_dim=hidden_dims[0],
+                                        num_support=num_support,  
+                                        dropout=self.dropout,
+                                        self_connections=self_connections
+                                    )
         elif accum == 'stack':
-            self.gcn = StackGCN(input_dim, hidden_dims[0])
+            self.gcn = StackGCN(
+                                    input_dim=input_dim,
+                                    output_dim=hidden_dims[0],
+                                    num_support=num_support,
+                                    dropout=self.dropout,
+                                    share_user_item_weights=True,
+                                    sparse_inputs=False
+                                )
         else:
             raise ValueError("accum must be 'sum' or 'stack'")
 
         # 2. Dense for side features
-        self.side_dense = nn.Linear(num_side_features, feat_hidden_dim)
+        self.side_dense_u = nn.Linear(u_num_side_features, feat_hidden_dim)
+        self.side_dense_v = nn.Linear(v_num_side_features, feat_hidden_dim)
 
         # 3. Projection layer after concat
         self.concat_dense = nn.Linear(hidden_dims[0] + feat_hidden_dim, hidden_dims[1])
@@ -252,11 +272,14 @@ class RecommenderSideInfoGAE(nn.Module):
             num_items=num_items,
             num_weights=num_basis_functions
         )
+ 
 
-        self.dropout = dropout
-
-    def forward(self, u_feat, v_feat, u_feat_side, v_feat_side,
+    def forward(self, u_feat_side, v_feat_side,
             support, support_t, u_indices, v_indices):
+        
+        device = self.user_emb.weight.device
+        u_feat = self.user_emb(torch.arange(self.num_users, device=device))
+        v_feat = self.item_emb(torch.arange(self.num_items, device=device))
     
         # GCN
         gcn_u, gcn_v = self.gcn(u_feat, v_feat, support, support_t)
@@ -265,8 +288,8 @@ class RecommenderSideInfoGAE(nn.Module):
         gcn_v = F.dropout(gcn_v, p=self.dropout, training=self.training)
         
         # Side info
-        feat_u = F.relu(self.side_dense(u_feat_side))
-        feat_v = F.relu(self.side_dense(v_feat_side))
+        feat_u = F.relu(self.side_dense_u(u_feat_side))
+        feat_v = F.relu(self.side_dense_v(v_feat_side))
                     
         feat_u = F.dropout(feat_u, p=self.dropout, training=self.training)
         feat_v = F.dropout(feat_v, p=self.dropout, training=self.training)
