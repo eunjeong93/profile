@@ -224,10 +224,26 @@ class BilinearMixture(nn.Module):
 
         return F.log_softmax(out, dim=1)
 
+class MLPDecoder(nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.decoder = nn.Sequential(
+            nn.Linear(input_dim * 2, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1) 
+        )
+
+    def forward(self, u_emb, v_emb, u_idx, v_idx):
+        u = u_emb[u_idx]
+        v = v_emb[v_idx]
+        x = torch.cat([u, v], dim=1)
+        return self.decoder(x).squeeze(1)  # [B, 1] → [B]
+
+
 class RecommenderSideInfoGAE(nn.Module):
     def __init__(self, feat_hidden_dim, num_support, hidden_dims, num_classes,
                  num_basis_functions, num_users, num_items, u_num_side_features, v_num_side_features,
-                 accum='sum', self_connections=False, dropout=0.5, input_dim=128):
+                 accum='sum', self_connections=False, dropout=0.5, input_dim=128, model_ty = 'classify'):
         super().__init__()
         
         self.dropout = dropout
@@ -264,14 +280,19 @@ class RecommenderSideInfoGAE(nn.Module):
         # 3. Projection layer after concat
         self.concat_dense = nn.Linear(hidden_dims[0] + feat_hidden_dim, hidden_dims[1])
 
-        # 4. Bilinear decoder
-        self.decoder = BilinearMixture(
-            input_dim=hidden_dims[1],
-            num_classes=num_classes,
-            num_users=num_users,
-            num_items=num_items,
-            num_weights=num_basis_functions
-        )
+        if model_ty == 'classify':
+            # 4. Bilinear decoder
+            self.decoder = BilinearMixture(
+                input_dim=hidden_dims[1],
+                num_classes=num_classes,
+                num_users=num_users,
+                num_items=num_items,
+                num_weights=num_basis_functions
+            )
+        elif model_ty == 'regression':
+            self.decoder = MLPDecoder(
+               input_dim=hidden_dims[1] 
+            ) 
  
 
     def forward(self, u_feat_side, v_feat_side,
