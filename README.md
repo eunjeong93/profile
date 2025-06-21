@@ -4,6 +4,7 @@
 Have worked as a data scientist from 2017. I focused on the developing model and statistics in the past. But now, I want to expand my career AI and MLOps.
 
 ## Career history
+- Alcon: Eyecare product (Lake Forest, USA, 05/2025 ~ current)
 - Kurly: Web commerce and Logistics (Seoul, South Korea, 05/2023 ~ 07/2024)
 - Barogo: Delivery and Losgistics (Seoul, South Korea, 10/2021 ~ 03/2023)
 - KBDataSystem: IT service for financial company (Seoul, South Korea, 03/2020 ~ 09/2021)
