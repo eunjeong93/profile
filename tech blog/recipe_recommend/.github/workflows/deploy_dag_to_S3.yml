@@ -1,27 +1,33 @@
-name: Upload DAG to S3
+name: Upload Airflow Code to S3
 
 on:
   push:
     paths:
-      - 'dags/**.py'
-  workflow_dispatch:  # 수동 실행도 가능
+      - '**.py'
+      - 'Dockerfile'
+      - 'requirements.txt'
+  workflow_dispatch:
 
 jobs:
-  upload:
+  upload-to-s3:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Upload DAG and code to S3
-      uses: jakejarvis/s3-sync-action@master
-      with:
-        args: --acl public-read --delete
+    - name: Copy files to temp folder and sync to S3
+      run: |
+        mkdir dist
+        cp dags/*.py dist/
+        cp gcmc_trainer.py dist/
+        cp GCMC.py dist/
+        cp requirements.txt dist/
+        cp Dockerfile dist/
+
+        aws s3 sync dist/ s3://$AWS_S3_BUCKET/dags/ --delete --exclude="*.ipynb"
       env:
-        AWS_S3_BUCKET: your-s3-bucket-name
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: us-west-2
-        SOURCE_DIR: 'dags'  # local 경로
-        DEST_DIR: 'dags/'   # S3 경로
