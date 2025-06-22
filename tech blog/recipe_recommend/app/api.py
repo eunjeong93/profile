@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from recommender import RecipeRecommender
 import pandas as pd
 import psycopg2
+import uvicorn
 
 app = FastAPI()
 
