@@ -1,0 +1,27 @@
+name: Upload DAG to S3
+
+on:
+  push:
+    paths:
+      - 'dags/**.py'
+  workflow_dispatch:  # 수동 실행도 가능
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Upload DAG and code to S3
+      uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --acl public-read --delete
+      env:
+        AWS_S3_BUCKET: your-s3-bucket-name
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: us-west-2
+        SOURCE_DIR: 'dags'  # local 경로
+        DEST_DIR: 'dags/'   # S3 경로

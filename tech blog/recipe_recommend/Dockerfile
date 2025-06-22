@@ -1,12 +1,17 @@
-FROM python:3.9-slim
+FROM apache/airflow:2.9.0-python3.10
 
-WORKDIR /app
+USER root
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y gcc
 
-COPY ./app ./app
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
 
-EXPOSE 7000
+# ✅ copy total files in airflow/dags/ 
+COPY airflow/dags/ /opt/airflow/dags/
 
-CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "7000"]
+# if needed, copy the model code
+COPY gcmc_trainer.py /opt/airflow/dags/
+COPY GCMC.py /opt/airflow/dags/
+
+USER airflow
