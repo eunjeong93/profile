@@ -7,8 +7,6 @@ seaborn
 plotly
 tqdm
 
-torch==2.6.0+cpu
-torch-optimizer==0.3.0
 transformers==4.50.3
 tokenizers==0.21.1
 sentence-transformers==4.0.1
