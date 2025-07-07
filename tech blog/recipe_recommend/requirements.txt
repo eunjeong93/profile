@@ -7,12 +7,6 @@ aioitertools
 aiosignal
 alabaster
 altair
-anaconda-anon-usage
-anaconda-catalogs
-anaconda-client
-anaconda-cloud-auth
-anaconda-navigator
-anaconda-project
 annotated-types
 anyio
 appdirs==1.4.4
