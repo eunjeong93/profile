@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from recommender import RecipeRecommender
+from .recommender import RecipeRecommender
 import pandas as pd
 import psycopg2
 import uvicorn
