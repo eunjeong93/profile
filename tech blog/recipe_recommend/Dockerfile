@@ -15,3 +15,4 @@ COPY gcmc_trainer.py /opt/airflow/dags/
 COPY GCMC.py /opt/airflow/dags/
 
 ENV PYTHONPATH=/app
+CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "7000"]
