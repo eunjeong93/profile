@@ -12,7 +12,8 @@ def load_data():
         dbname="mydb",
         user="user",
         password="pass",
-        host="my_postgres",
+        # host="my_postgres", # To build docker image, it would be changed
+        host = "localhost",
         port="5432"
     )
 
