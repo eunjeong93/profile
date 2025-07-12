@@ -15,3 +15,4 @@ COPY gcmc_trainer.py /opt/airflow/dags/
 COPY GCMC.py /opt/airflow/dags/
 
 USER airflow
+ENV PYTHONPATH=/app
