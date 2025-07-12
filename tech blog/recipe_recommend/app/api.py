@@ -69,4 +69,4 @@ def recommend_recipe(input_data: RecommendationInput):
 
 # FastAPI 실행 (직접 실행할 경우만)
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=7000)
+    uvicorn.run(app, host="18.144.40.123", port=7000)
