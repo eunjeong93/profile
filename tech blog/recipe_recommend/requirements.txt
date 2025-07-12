@@ -19,7 +19,7 @@ httpx
 requests
 starlette==0.46.1
 
-psycopg2==2.9.10
+psycopg2-binary==2.9.10
 SQLAlchemy
 s3fs
 fsspec
