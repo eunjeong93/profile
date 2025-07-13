@@ -14,7 +14,7 @@ def load_data():
         password="pass",
         # host="my_postgres", # To build docker image, it would be changed
         host = "172.31.28.246",
-        port="5432"
+        port="5433"
     )
 
     df = pd.read_sql(
