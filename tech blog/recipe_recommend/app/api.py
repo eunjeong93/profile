@@ -10,7 +10,7 @@ app = FastAPI()
 def load_data():
     conn = psycopg2.connect(
         dbname="mydb",
-        user="user",
+        user="postgres",
         password="pass",
         # host="my_postgres", # To build docker image, it would be changed
         host = "18.144.40.123",
