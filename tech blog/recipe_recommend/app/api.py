@@ -10,11 +10,11 @@ app = FastAPI()
 def load_data():
     conn = psycopg2.connect(
         dbname="mydb",
-        user="postgres",
+        user="user",
         password="pass",
         # host="my_postgres", # To build docker image, it would be changed
         host = "172.31.28.246",
-        port="5433"
+        port="5432"
     )
 
     df = pd.read_sql(
