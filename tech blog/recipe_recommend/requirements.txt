@@ -41,3 +41,4 @@ flake8
 isort
 pylint
 pytest
+torch_optimizer
