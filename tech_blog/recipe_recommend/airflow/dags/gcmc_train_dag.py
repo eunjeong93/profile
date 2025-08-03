@@ -49,7 +49,7 @@ def run_training():
     # 모델 저장은 trainer 내부에서 수행됨
 
 with DAG(
-    'gcmc_training_dag',
+    dag_id = 'gcmc_training_dag',
     default_args=default_args,
     description='Train GCMC model on schedule',
     schedule = '0 3 * * *',  # 매일 오전 3시
