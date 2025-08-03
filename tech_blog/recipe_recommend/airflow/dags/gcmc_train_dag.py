@@ -52,7 +52,7 @@ with DAG(
     dag_id = 'gcmc_training_dag',
     default_args=default_args,
     description='Train GCMC model on schedule',
-    schedule = '0 3 * * *',  # 매일 오전 3시
+    schedule_interval = '0 3 * * *',  # 매일 오전 3시
     start_date=datetime(2025, 6, 22),
     catchup=False,
     tags=['gcmc', 'ml', 'airflow'],
