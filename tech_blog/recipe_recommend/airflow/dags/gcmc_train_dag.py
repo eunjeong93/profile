@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from gcmc_trainer import GCMCDataset, GCMCTrainer
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 default_args = {
     'owner': 'airflow',
