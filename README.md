@@ -17,7 +17,8 @@ Have worked as a data scientist from 2017. I focused on the developing model and
 - Tools: GCP, AWS, Git, Docker
 
 ## Education
-- Bechelors in Statistics, Sookmyung women's university (Seoul, South Korea)
+- Bechelors in Statistics, Sookmyung women's university (2012 ~ 2018, Seoul, South Korea)
+- Master of Science (MS) Computer Science, Cal State University Fullerton (2025 ~ Current, Fullerton, CA, USA)
 
 ## Certifications
 - Big Data Analyzer | Korea Data Development Agency | ID BAE-007001469 | 12/2023
